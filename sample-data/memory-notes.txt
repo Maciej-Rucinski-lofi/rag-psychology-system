@@ -1,0 +1,8 @@
+Memory Study Notes
+
+Working memory is the limited mental workspace used to hold and manipulate
+information for a short time. Long-term memory stores information over longer
+periods and is often discussed in relation to encoding, storage, and retrieval.
+
+The spacing effect says that study sessions spread across time usually lead to
+better retention than one long cramming session.

@@ -1,0 +1,47 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DOCUMENTS_ROOT: /documents
+      CHROMA_PATH: /data/chroma
+      SETTINGS_PATH: /data/settings.json
+      OLLAMA_BASE_URL: http://ollama:11434
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./backend/app:/app/app
+      - rag-data:/data
+      - ${DOCUMENTS_HOST_PATH:-./sample-data}:/documents:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    environment:
+      VITE_API_BASE_URL: /api
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+
+volumes:
+  rag-data:
+  frontend-node-modules:
+  ollama-data:

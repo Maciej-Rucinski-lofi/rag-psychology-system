@@ -1,0 +1,56 @@
+[project]
+name = "psychology-rag-backend"
+version = "0.1.0"
+description = "Local-first RAG backend for psychology study notes."
+requires-python = ">=3.12"
+dependencies = [
+  "anthropic>=0.39.0",
+  "chromadb>=0.5.23",
+  "fastapi>=0.115.6",
+  "httpx>=0.28.1",
+  "langchain-text-splitters>=0.3.2",
+  "odfpy>=1.4.1",
+  "openai>=1.57.0",
+  "pydantic>=2.10.3",
+  "pydantic-settings>=2.6.1",
+  "pymupdf>=1.25.1",
+  "python-multipart>=0.0.19",
+  "sentence-transformers>=3.3.1",
+  "uvicorn[standard]>=0.32.1"
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "app.services"]
+
+[project.optional-dependencies]
+dev = [
+  "black>=24.10.0",
+  "mypy>=1.13.0",
+  "pytest>=8.3.4",
+  "pytest-asyncio>=0.24.0",
+  "pytest-cov>=6.0.0",
+  "ruff>=0.8.2"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+strict = true
+ignore_missing_imports = true

@@ -1,0 +1,480 @@
+Use this prompt in [Cursor IDE](https://cursor.com?utm_source=chatgpt.com). It is designed to guide the AI agent step-by-step and force good architecture, testing, Dockerization, and local-first RAG design.
+
+---
+
+# Prompt for Cursor IDE
+
+You are a senior full-stack AI engineer and software architect.
+
+Your task is to build a production-quality local RAG (Retrieval-Augmented Generation) desktop-style web application for non-technical users.
+
+The application must allow a user to select a local directory containing psychology study notes and then chat with an AI assistant that answers questions using those documents.
+
+The project must prioritize:
+
+* simplicity
+* maintainability
+* local-first architecture
+* Dockerized deployment
+* easy startup from Windows PowerShell
+* clear project structure
+* strong testing coverage
+* beginner-friendly code explanations and comments
+
+The user is not an expert in RAG systems, so:
+
+* explain important architectural decisions in comments and README
+* keep the implementation understandable
+* avoid unnecessary complexity
+* prefer stable and well-documented libraries
+
+---
+
+# Functional Requirements
+
+The application must:
+
+1. Allow the user to choose a local directory containing files.
+2. Support these file extensions:
+
+   * PDF
+   * TXT
+   * ODT
+   * ODS
+3. Parse and ingest all supported documents.
+4. Split documents into chunks.
+5. Generate embeddings.
+6. Store embeddings locally in a vector database.
+7. Provide chat interface for asking questions.
+8. Retrieve relevant chunks using semantic search.
+9. Send retrieved context to LLM.
+10. Display answers with:
+
+    * source filenames
+    * relevant excerpts
+11. Allow re-indexing documents.
+12. Persist vector database between restarts.
+13. Work fully locally except optional LLM API calls.
+14. Be easy to launch with ONE PowerShell command.
+
+---
+
+# Tech Stack Requirements
+
+## Frontend
+
+Use:
+
+* React
+* TypeScript
+* Vite
+* TailwindCSS
+* shadcn/ui
+
+Frontend responsibilities:
+
+* chat UI
+* folder selection
+* ingestion progress
+* document statistics
+* health status
+* settings page
+* model configuration
+* reindex button
+
+Frontend should look modern but minimal.
+
+---
+
+## Backend
+
+Use:
+
+* Python 3.12
+* FastAPI
+* Pydantic
+* Uvicorn
+
+Backend responsibilities:
+
+* document ingestion
+* parsing
+* chunking
+* embeddings
+* retrieval
+* RAG orchestration
+* API endpoints
+* health checks
+
+---
+
+# RAG Architecture Requirements
+
+Implement a clean and understandable RAG pipeline.
+
+Use:
+
+## Document Loaders
+
+* PyMuPDF for PDF
+* odfpy for ODT/ODS
+* standard Python reader for TXT
+
+## Chunking
+
+Use:
+
+* RecursiveCharacterTextSplitter
+
+Chunk settings:
+
+* chunk size: 800
+* overlap: 150
+
+Make these configurable.
+
+---
+
+## Embeddings
+
+Default embedding model:
+
+* sentence-transformers/all-MiniLM-L6-v2
+
+Must run locally.
+
+Use:
+
+* sentence-transformers
+
+---
+
+## Vector Database
+
+Use:
+
+* ChromaDB
+
+Requirements:
+
+* persistent local storage
+* Docker volume persistence
+* metadata support
+
+---
+
+## LLM Integration
+
+Architecture must support BOTH:
+
+### Local LLM
+
+Preferred:
+
+* Ollama
+
+Default model:
+
+* mistral
+  or
+* llama3
+
+### Cloud LLM (optional)
+
+Support optional API usage for:
+
+* OpenAI
+* Anthropic
+
+Use environment variables.
+
+Design abstraction layer so changing models is easy.
+
+---
+
+# API Requirements
+
+Create clean REST API with OpenAPI docs.
+
+Endpoints should include:
+
+* POST /ingest
+* POST /chat
+* GET /documents
+* DELETE /documents
+* GET /health
+* GET /settings
+* PUT /settings
+
+Use proper DTOs and validation.
+
+---
+
+# Docker Requirements
+
+The entire application MUST be containerized.
+
+Use:
+
+* Docker
+* Docker Compose
+
+Requirements:
+
+* frontend container
+* backend container
+* chromadb persistence
+* environment variable support
+* mounted local documents directory
+* hot reload in development
+
+Application must start with ONE command:
+
+```powershell
+docker compose up --build
+```
+
+Also create:
+
+* production compose
+* development compose
+
+---
+
+# Windows Requirements
+
+This project is primarily for Windows users.
+
+Requirements:
+
+* PowerShell scripts
+* path compatibility
+* simple startup
+* beginner-friendly instructions
+
+Create:
+
+* start.ps1
+* stop.ps1
+* reset.ps1
+
+---
+
+# Testing Requirements
+
+Implement comprehensive testing.
+
+## Backend Tests
+
+Use:
+
+* pytest
+
+Create:
+
+* unit tests
+* integration tests
+* API tests
+
+Test:
+
+* document parsing
+* chunking
+* embeddings
+* retrieval quality
+* API endpoints
+
+Target:
+
+* minimum 80% coverage
+
+---
+
+## Frontend Tests
+
+Use:
+
+* Vitest
+* React Testing Library
+
+Test:
+
+* chat components
+* upload flow
+* settings
+* API interactions
+
+---
+
+## End-to-End Tests
+
+Use:
+
+* Playwright
+
+Test full user flows:
+
+1. start app
+2. ingest documents
+3. ask question
+4. verify answer
+5. verify citations
+
+---
+
+# Project Structure Requirements
+
+Use a clean monorepo structure.
+
+Example:
+
+```text
+project-root/
+│
+├── frontend/
+├── backend/
+├── tests/
+├── docker/
+├── scripts/
+├── docs/
+├── sample-data/
+└── README.md
+```
+
+---
+
+# Security Requirements
+
+* sanitize uploaded paths
+* avoid arbitrary file execution
+* validate extensions
+* avoid prompt injection from documents
+* use safe parsing
+
+---
+
+# Performance Requirements
+
+* asynchronous ingestion
+* background tasks
+* streaming chat responses
+* caching
+* avoid re-embedding unchanged files
+
+Use file hashes to detect changes.
+
+---
+
+# UX Requirements
+
+Frontend should include:
+
+* drag-and-drop folder support if possible
+* ingestion progress bar
+* indexed document count
+* token/context visualization
+* dark mode
+* responsive layout
+
+---
+
+# Developer Experience Requirements
+
+Generate:
+
+* comprehensive README
+* architecture diagrams
+* setup documentation
+* API examples
+* troubleshooting guide
+
+Explain:
+
+* what RAG is
+* how embeddings work
+* how retrieval works
+* how vector databases work
+
+Write explanations for beginners.
+
+---
+
+# Code Quality Requirements
+
+Use:
+
+* linting
+* formatting
+* type checking
+* pre-commit hooks
+
+Frontend:
+
+* ESLint
+* Prettier
+
+Backend:
+
+* Ruff
+* Black
+* mypy
+
+---
+
+# CI/CD Requirements
+
+Add GitHub Actions for:
+
+* linting
+* tests
+* Docker build validation
+
+---
+
+# Important Implementation Notes
+
+Prefer:
+
+* readability over cleverness
+* modular architecture
+* dependency injection
+* strongly typed interfaces
+
+Avoid:
+
+* overengineering
+* microservices
+* Kubernetes
+* unnecessary abstractions
+
+---
+
+# Deliverables
+
+Generate ALL required code and files:
+
+* frontend
+* backend
+* Docker configs
+* tests
+* scripts
+* README
+* environment templates
+
+The application should be runnable immediately after:
+
+```powershell
+docker compose up --build
+```
+
+---
+
+# Final Requirement
+
+While implementing:
+
+* explain your reasoning
+* explain tradeoffs
+* explain RAG concepts in comments
+* act as mentor for beginner AI engineer
+* generate production-quality but educational codebase
