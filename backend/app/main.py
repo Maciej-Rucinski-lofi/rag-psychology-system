@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,10 +27,25 @@ from app.services.rag import RagService
 from app.services.settings_store import SettingsStore
 from app.services.vector_store import VectorStore
 
+_vector_store_ready = False
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    global _vector_store_ready
+    try:
+        get_vector_store()
+        _vector_store_ready = True
+    except Exception:
+        _vector_store_ready = False
+    yield
+
+
 app = FastAPI(
     title="Psychology Notes RAG API",
     description="Local-first RAG API for indexing study notes and answering questions.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 settings = runtime_settings()
@@ -46,7 +63,7 @@ def health(runtime: Settings = Depends(runtime_settings)) -> HealthResponse:
     return HealthResponse(
         status="ok",
         version=app.version,
-        vector_store_ready=True,
+        vector_store_ready=_vector_store_ready,
         documents_root=str(runtime.documents_root),
     )
 

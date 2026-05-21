@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react';
+import { BrainCircuit, Moon, Sparkles, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { api } from './lib/api';
@@ -16,6 +16,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -26,14 +27,25 @@ export default function App() {
   }, []);
 
   async function refresh() {
-    const [healthResult, settingsResult, documentsResult] = await Promise.all([
-      api.health(),
-      api.settings(),
-      api.documents(),
-    ]);
-    setHealth(healthResult);
-    setSettings(settingsResult);
-    setDocuments(documentsResult);
+    setBootstrapping(true);
+
+    const healthPromise = api.health().then(setHealth).catch(() => setHealth(null));
+    const settingsPromise = api.settings().then(setSettings).catch(() => setSettings(null));
+    const documentsPromise = api
+      .documents()
+      .then(setDocuments)
+      .catch(() =>
+        setDocuments({
+          documents: [],
+          total_documents: 0,
+          total_chunks: 0,
+          last_ingest_message: 'Could not load indexed documents. Try refreshing the page.',
+          ingest_running: false,
+        }),
+      );
+
+    await Promise.allSettled([healthPromise, settingsPromise, documentsPromise]);
+    setBootstrapping(false);
   }
 
   async function runIngest(force: boolean) {
@@ -79,28 +91,67 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen p-4 sm:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Psychology Notes RAG</h1>
-            <p className="text-muted-foreground">
-              Local document search with cited AI answers for study notes.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge>{health?.status === 'ok' ? 'API healthy' : 'API unknown'}</Badge>
-            <Button className="bg-slate-700" onClick={() => setDark((value) => !value)}>
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
+    <main className="min-h-screen px-4 py-6 sm:px-8 lg:py-10">
+      <div className="mx-auto max-w-7xl space-y-7">
+        <header className="overflow-hidden rounded-[2rem] border border-white/60 bg-white/75 p-6 shadow-2xl shadow-slate-200/70 backdrop-blur dark:border-white/10 dark:bg-white/10 dark:shadow-black/20 sm:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-xl shadow-blue-500/30">
+                <BrainCircuit className="h-7 w-7" />
+              </div>
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+                  <Sparkles className="h-4 w-4" />
+                  Local-first psychology assistant
+                </div>
+                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                  Psychology Notes RAG
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                  Ask questions about your study notes and get answers with source excerpts.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge
+                className={
+                  health?.status === 'ok'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200'
+                    : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200'
+                }
+              >
+                {health?.status === 'ok' ? 'API healthy' : 'API unknown'}
+              </Badge>
+              <Button
+                aria-label="Toggle dark mode"
+                className="h-11 w-11 bg-slate-900 px-0 text-white shadow-slate-900/20 dark:bg-white dark:text-slate-950"
+                onClick={() => setDark((value) => !value)}
+              >
+                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </header>
-        {notice ? <div className="rounded-xl border bg-card p-3 text-sm">{notice}</div> : null}
+        {notice ? (
+          <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4 text-sm font-medium text-primary shadow-lg shadow-blue-500/10">
+            {notice}
+          </div>
+        ) : null}
         <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
           <ChatPanel messages={messages} loading={loading} onAsk={ask} />
           <aside className="space-y-6">
-            <DocumentStats documents={documents} onIngest={runIngest} onClear={clearDocuments} />
-            <SettingsPanel settings={settings} onChange={setSettings} onSave={saveSettings} />
+            <DocumentStats
+              documents={documents}
+              loading={bootstrapping && !documents}
+              onIngest={runIngest}
+              onClear={clearDocuments}
+            />
+            <SettingsPanel
+              settings={settings}
+              loading={bootstrapping && !settings}
+              onChange={setSettings}
+              onSave={saveSettings}
+            />
           </aside>
         </div>
       </div>

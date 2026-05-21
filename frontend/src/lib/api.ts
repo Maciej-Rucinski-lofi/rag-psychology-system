@@ -2,11 +2,14 @@ import type { AppSettings, DocumentListResponse, HealthResponse, SourceChunk } f
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(path: string, options?: RequestInit, timeoutMs = 15000): Promise<T> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   const response = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
+    signal: controller.signal,
     ...options,
-  });
+  }).finally(() => window.clearTimeout(timeout));
   if (!response.ok) {
     const message = await errorMessage(response);
     throw new Error(message || `Request failed: ${response.status}`);
@@ -32,7 +35,7 @@ export const api = {
   settings: () => request<AppSettings>('/settings'),
   saveSettings: (settings: AppSettings) =>
     request<AppSettings>('/settings', { method: 'PUT', body: JSON.stringify(settings) }),
-  documents: () => request<DocumentListResponse>('/documents'),
+  documents: () => request<DocumentListResponse>('/documents', undefined, 30000),
   clearDocuments: () => request<DocumentListResponse>('/documents', { method: 'DELETE' }),
   ingest: (folderPath?: string, forceReindex = false) =>
     request<{ accepted: boolean; message: string }>('/ingest', {

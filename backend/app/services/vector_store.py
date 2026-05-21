@@ -16,6 +16,10 @@ class VectorStore:
             name=collection_name,
             metadata={"description": "Psychology study note chunks"},
         )
+        self._documents_cache: list[DocumentInfo] | None = None
+
+    def _invalidate_documents_cache(self) -> None:
+        self._documents_cache = None
 
     def upsert_chunks(self, chunks: list[TextChunk], embeddings: list[list[float]]) -> None:
         if not chunks:
@@ -36,14 +40,17 @@ class VectorStore:
                 for chunk in chunks
             ],
         )
+        self._invalidate_documents_cache()
 
     def delete_document_hash(self, sha256: str) -> None:
         self.collection.delete(where={"sha256": sha256})
+        self._invalidate_documents_cache()
 
     def clear(self) -> None:
         ids = self.collection.get(include=[])["ids"]
         if ids:
             self.collection.delete(ids=ids)
+        self._invalidate_documents_cache()
 
     def has_document_hash(self, sha256: str) -> bool:
         result = self.collection.get(where={"sha256": sha256}, limit=1, include=[])
@@ -69,6 +76,9 @@ class VectorStore:
         ]
 
     def documents(self) -> list[DocumentInfo]:
+        if self._documents_cache is not None:
+            return self._documents_cache
+
         raw = self.collection.get(include=["metadatas"])
         grouped: dict[str, dict[str, Any]] = {}
         for metadata in raw.get("metadatas", []):
@@ -88,4 +98,7 @@ class VectorStore:
                 },
             )
             current["chunks"] += 1
-        return [DocumentInfo(**item) for item in sorted(grouped.values(), key=lambda x: x["filename"])]
+        self._documents_cache = [
+            DocumentInfo(**item) for item in sorted(grouped.values(), key=lambda x: x["filename"])
+        ]
+        return self._documents_cache
